@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>스레드 자동화 챌린지 3기 — 단톡방 정리</title>
+<style>
+:root{
+  --bg:#faf9f7; --panel:#ffffff; --ink:#1c1b19; --ink-2:#4a4741; --ink-3:#7d7970;
+  --line:#e5e1da; --line-2:#efece6;
+  --accent:#8a3324; --accent-soft:#fdf3f0; --accent-line:#e8c9c0;
+  --god:#1f4a6b; --god-soft:#f0f6fa; --god-line:#c3dbe9;
+  --warn:#8a5a00; --warn-soft:#fdf7e8; --warn-line:#ecd9a8;
+  --ok:#2b6248; --ok-soft:#eff7f2; --ok-line:#c2ddcd;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+  --sans:"Pretendard","Pretendard Variable",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#16161a; --panel:#1d1e23; --ink:#eceae6; --ink-2:#b6b2ab; --ink-3:#87837c;
+    --line:#32333a; --line-2:#26272c;
+    --accent:#e8a08c; --accent-soft:#2a1f1c; --accent-line:#4d3630;
+    --god:#8fc4e6; --god-soft:#182530; --god-line:#2f4d63;
+    --warn:#e5bf72; --warn-soft:#2a2418; --warn-line:#4d4128;
+    --ok:#8ecdaa; --ok-soft:#182521; --ok-line:#2c4a3b;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#16161a; --panel:#1d1e23; --ink:#eceae6; --ink-2:#b6b2ab; --ink-3:#87837c;
+  --line:#32333a; --line-2:#26272c;
+  --accent:#e8a08c; --accent-soft:#2a1f1c; --accent-line:#4d3630;
+  --god:#8fc4e6; --god-soft:#182530; --god-line:#2f4d63;
+  --warn:#e5bf72; --warn-soft:#2a2418; --warn-line:#4d4128;
+  --ok:#8ecdaa; --ok-soft:#182521; --ok-line:#2c4a3b;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-size:16px; line-height:1.75;
+  letter-spacing:-0.005em; word-break:keep-all; overflow-wrap:anywhere;
+}
+img{max-width:100%}
+[hidden]{display:none!important}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.grid{display:grid;grid-template-columns:230px minmax(0,1fr);gap:56px;align-items:start}
+@media (max-width:940px){ .grid{grid-template-columns:1fr;gap:0} }
+
+/* ---------- header ---------- */
+header.top{border-bottom:1px solid var(--line);background:var(--panel)}
+header.top .wrap{padding-top:56px;padding-bottom:40px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 14px}
+h1{font-size:clamp(28px,4.4vw,42px);line-height:1.25;margin:0 0 18px;letter-spacing:-0.03em;font-weight:800}
+.lede{font-size:17px;color:var(--ink-2);max-width:56ch;margin:0 0 26px}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:12.5px;color:var(--ink-2);background:var(--bg);border:1px solid var(--line);
+  border-radius:999px;padding:5px 12px;white-space:nowrap}
+.chip b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---------- toc ---------- */
+nav.toc{position:sticky;top:28px;padding:34px 0 60px;font-size:14px}
+nav.toc .label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
+  font-weight:700;margin-bottom:14px}
+nav.toc ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--line)}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:6px 0 6px 14px;margin-left:-1px;border-left:2px solid transparent;
+  color:var(--ink-2);text-decoration:none;line-height:1.45}
+nav.toc a:hover{color:var(--ink);border-left-color:var(--line)}
+nav.toc a.sub{padding-left:26px;font-size:13px;color:var(--ink-3)}
+nav.toc a.active{color:var(--accent);border-left-color:var(--accent);font-weight:600}
+@media (max-width:940px){
+  nav.toc{position:static;padding:24px 0;border-bottom:1px solid var(--line)}
+  nav.toc ol{display:flex;flex-wrap:wrap;gap:6px;border-left:0}
+  nav.toc a,nav.toc a.sub{border:1px solid var(--line);border-radius:999px;padding:5px 12px;
+    margin:0;font-size:13px;background:var(--panel)}
+  nav.toc a.sub{display:none}
+  nav.toc a.active{border-color:var(--accent);background:var(--accent-soft)}
+}
+
+/* ---------- article ---------- */
+main{padding:44px 0 120px;min-width:0}
+section{margin:0 0 64px;scroll-margin-top:24px}
+h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);
+  font-weight:800;margin:0 0 6px}
+.h2sub{font-size:clamp(22px,3vw,29px);line-height:1.3;margin:0 0 8px;letter-spacing:-0.025em;font-weight:800}
+h3{font-size:19px;margin:40px 0 14px;letter-spacing:-0.02em;font-weight:750;
+  padding-top:22px;border-top:1px solid var(--line-2)}
+h3:first-of-type{border-top:0;padding-top:0;margin-top:28px}
+h4{font-size:15.5px;margin:26px 0 10px;font-weight:700;color:var(--ink)}
+p{margin:0 0 14px}
+.rule{height:1px;background:var(--line);border:0;margin:0 0 30px}
+ul,ol.body{margin:0 0 16px;padding-left:20px}
+li{margin:0 0 8px}
+li::marker{color:var(--ink-3)}
+strong{font-weight:750}
+em{font-style:normal;background:linear-gradient(transparent 62%,var(--accent-soft) 62%);
+  padding:0 1px;font-weight:650}
+code{font-family:var(--mono);font-size:.87em;background:var(--panel);border:1px solid var(--line);
+  border-radius:5px;padding:1px 6px;font-variant-numeric:tabular-nums}
+a{color:var(--accent)}
+.src{color:var(--ink-3);font-size:13.5px}
+
+/* ---------- quote: 개발의신 ---------- */
+blockquote{margin:18px 0;padding:16px 20px;background:var(--god-soft);
+  border:1px solid var(--god-line);border-left:3px solid var(--god);border-radius:0 8px 8px 0}
+blockquote p{margin:0 0 8px;font-size:15.5px;line-height:1.72;color:var(--ink)}
+blockquote p:last-child{margin:0}
+blockquote .who{display:block;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--god);font-weight:800;margin-bottom:8px}
+
+/* ---------- callouts ---------- */
+.note{border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:20px 0;
+  background:var(--panel);font-size:15px}
+.note.warn{background:var(--warn-soft);border-color:var(--warn-line)}
+.note.warn .t{color:var(--warn)}
+.note.key{background:var(--ok-soft);border-color:var(--ok-line)}
+.note.key .t{color:var(--ok)}
+.note .t{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;
+  color:var(--ink-3);margin-bottom:8px}
+.note p:last-child,.note ul:last-child{margin-bottom:0}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:20px 0;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:14.5px}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{background:var(--bg);font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:800;white-space:nowrap;border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:0}
+td:first-child{font-weight:650;white-space:nowrap;color:var(--ink)}
+
+/* ---------- steps ---------- */
+ol.steps{list-style:none;counter-reset:s;margin:20px 0;padding:0}
+ol.steps li{counter-increment:s;position:relative;padding:0 0 0 44px;margin:0 0 16px;min-height:30px}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:28px;height:28px;
+  border-radius:50%;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);
+  display:grid;place-items:center;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);background:var(--panel);padding:32px 0;
+  font-size:13.5px;color:var(--ink-3)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between}
+
+@media print{
+  nav.toc,footer{display:none}
+  body{background:#fff;font-size:11pt}
+  .grid{display:block}
+  section{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">단톡방 리서치 노트</p>
+    <h1>스레드 자동화 챌린지 3기<br>단톡방 정리</h1>
+    <p class="lede">카카오톡 대화 전문에서 <strong>주인장(개발의신)</strong> 발언을 우선 추출하고,
+      CS 공식 답변과 참가자 실전 후기를 보강해 정리했다.</p>
+    <div class="meta">
+      <span class="chip">기간 <b>2026-08-29 ~ 09-08</b></span>
+      <span class="chip">전체 <b>5,748줄</b></span>
+      <span class="chip">개발의신 <b>1,204건</b></span>
+      <span class="chip">CS 담당자 <b>99건</b></span>
+      <span class="chip">정리일 <b>2026-09-08</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="grid">
+
+  <nav class="toc">
+    <div class="label">목차</div>
+    <ol id="toclist">
+      <li><a href="#s1">1. 개발의신이 말한 핵심</a></li>
+      <li><a href="#mindset" class="sub">마인드</a></li>
+      <li><a href="#flow" class="sub">실제 작업 흐름</a></li>
+      <li><a href="#hook" class="sub">후킹과 페르소나</a></li>
+      <li><a href="#account" class="sub">계정 운영 기준</a></li>
+      <li><a href="#ban" class="sub">정지 / 계정 상태</a></li>
+      <li><a href="#views" class="sub">조회수 해석</a></li>
+      <li><a href="#money" class="sub">수익화 (쿠파스·토스)</a></li>
+      <li><a href="#tool" class="sub">드레쓰 세팅</a></li>
+      <li><a href="#program" class="sub">챌린지 진행 구조</a></li>
+      <li><a href="#s2">2. 참가자 검증 팁</a></li>
+      <li><a href="#s3">3. 적용한다면</a></li>
+      <li><a href="#s4">4. 주의할 부분</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+  <!-- ============ 1 ============ -->
+  <section id="s1">
+    <h2>Section 1</h2>
+    <p class="h2sub">개발의신이 말한 핵심 원칙</p>
+    <hr class="rule">
+
+    <h3 id="mindset">1-1. 마인드 — 분량의 절반이 여기다</h3>
+
+    <h4>부업은 시간을 단축시키는 것</h4>
+    <blockquote>
+      <span class="who">개발의신 · 9/7</span>
+      <p>품을 많이 들면 결국 사람들 대다수는 "와 내가 이정도 시간 썼는데 결과가 이렇다고"의 논리에요.
+        <strong>루저마인드입니다. 소비자마인드구요. 생산자 사업가들은 시간을 줄일 생각을 합니다.</strong></p>
+      <p>나중에 시간될 때 여유를 부리시고, 돈이 될 때 여유를 부리세요.
+        반대로 시간을 많이 쏟는 건 여유를 부리는 행위입니다.</p>
+    </blockquote>
+
+    <h4>조회수를 보는 관점을 뒤집어라</h4>
+    <blockquote>
+      <span class="who">개발의신 · 9/2</span>
+      <p>"300 나오는데? 망한 거 아닌가요?" 보다<br>
+        "와 이딴 글을 300명이나 봤어? 더 올려야겠네 미친 채널이다"<br>
+        라고 생각하는 게 좋습니다.</p>
+    </blockquote>
+
+    <h4>스레드는 하방이 없는 대신 상방이 뚫려 있다</h4>
+    <blockquote>
+      <span class="who">개발의신 · 9/2</span>
+      <p>유튭 인스타는 구독자·팔로우 많으면 하방 조회수가 깔리죠. 스레드는 그런 게 없다.
+        그건 뭐냐 — <strong>상방. 너도나도 도전할 수 있다. 0따리 팔로워도 조회수 몇백만 가능하다</strong>입니다.
+        미친 시장입니다.</p>
+    </blockquote>
+
+    <h4>수십 개 올려서 1~2개 터지는 전략</h4>
+    <blockquote>
+      <span class="who">개발의신 · 9/7</span>
+      <p>저들도 다 조회수를 다 터트리냐? 놉! 절대.
+        <strong>수십 개 올리는 것 중에 1-2개 터지는 전략</strong>을 세우고 가는 겁니다.</p>
+    </blockquote>
+
+    <h4>채팅방에 물어보는 습관이 포기를 부른다</h4>
+    <blockquote>
+      <span class="who">개발의신 · 9/1</span>
+      <p>시간 아낄려고 채팅방에 매번 물어보고 답변받으면
+        <strong>한 달도 못하고 포기하는 분들 99%.</strong>
+        좀 보고 본인 스스로 머릿속에 인식을 해야 어떤 질문이든 "아 저거 그랬지"라고 하죠.</p>
+    </blockquote>
+
+    <p class="src">그 외 반복 문구 — "뇌 빼고 한 달은 해봐라" · "할까 말까 고민하지 말고 하고 후회해라"
+      · "1-2주 하고 낙오자 100% 생긴다" · "조급해할 필요 없다"</p>
+
+    <!-- ---- -->
+    <h3 id="flow">1-2. 개발의신 본인의 실제 작업 흐름</h3>
+    <p class="src">9/7 오전, 가장 구체적으로 공개한 부분.</p>
+
+    <ol class="steps">
+      <li><strong>PC 버전 벤치마킹 전용 계정을 1개 만든다.</strong>
+        그 아이디는 벤치마킹만 하고, 매일 드레쓰에 담는다.</li>
+      <li><strong>그다음 다계정에 업로드</strong>하는 방식으로 간다.</li>
+      <li><em>상품을 찾고 거기 맞는 영상을 찾는 게 아니라, 영상을 찾고 거기 맞는 상품을 찾는다.</em>
+        (쇼핑쇼츠도 동일)</li>
+      <li>예시: 목받침·스트레칭 기구 영상 → 헬스용품 링크를 단다. "척하면 척"</li>
+    </ol>
+
+    <blockquote>
+      <span class="who">개발의신 · 9/7</span>
+      <p>쿠팡에서 상품을 찾고 올리는 게 아니라, <strong>영상을 보고 그 상품을 찾는 게 스레드에서는 더 빠를 거구요.</strong></p>
+    </blockquote>
+
+    <ul>
+      <li>레퍼런스 계정 <strong>약 200개</strong>가 공유 드라이브에 있음 →
+        "여기 계정들만 보시더라도 컨텐츠는 넘쳐납니다."</li>
+      <li><strong>레퍼런스만 스크랩하는 계정 1개</strong>를 따로 만들고 공유된 링크 몇 개를 클릭해두면,
+        내 추천 피드가 유사 피드로 채워진다. <span class="src">(9/2)</span></li>
+      <li>1688·샤오홍슈는 굳이 할 필요 없다고 라이브에서 언급.</li>
+    </ul>
+
+    <!-- ---- -->
+    <h3 id="hook">1-3. 후킹과 페르소나 — 조회수를 가르는 진짜 변수</h3>
+
+    <p>같은 영상인데 어떤 건 1만·10만·40만, 어떤 건 천 단위. 차이는 이것이다.</p>
+    <blockquote>
+      <span class="who">개발의신 · 9/7</span>
+      <p><strong>키워드 몇 개, 문장 구조로 인해 조회수는 달라져요.</strong></p>
+      <p>19만 떠진 프로필? GPT입니다. … 그렇게 따지면 천따리가 (오히려) 사람 사진인데요.
+        <strong>엉뚱한 데 중요하다고 느끼지 마시고 저 문장 구조를 보시라구요. 제발!!!!!</strong></p>
+      <p>그래서 이런 걸 매번 어케 찾아? <strong>페르소나로 셋팅을 해.</strong></p>
+    </blockquote>
+
+    <div class="note key">
+      <div class="t">페르소나 정의</div>
+      <p>"페르소나를 기본적으로 부캐라고 이야기하지만 <strong>말의 구조, 뽐새</strong>거든요.
+        그 후킹 방향을 어떻게 잡느냐에 따라 <strong>같은 영상·사진을 올려도 유입률이 달라져요.</strong>"
+        <span class="src">— 9/2</span></p>
+    </div>
+
+    <ul>
+      <li>다계정 운영 시 <em>텍스트와 콘텐츠까지 똑같이 올리면 안 된다.</em> 계정마다 페르소나를 달리한다.
+        <br><span class="src">"텍스트랑 컨텐츠까지 똑같이 올리면 바보입니다. 이때 페르소나 테스트를 하세요.
+        어떤 후킹이 잘 먹히나. 잘 터지는 페르소나를 빠르게."</span></li>
+      <li><strong>해시태그는 의미 없음.</strong></li>
+      <li>계정 컨셉과 안 맞는 콘텐츠는 올리지 않는다.
+        <span class="src">(본인 개발자 계정에 쇼핑 콘텐츠를 안 올리는 이유로 설명)</span></li>
+    </ul>
+
+    <!-- ---- -->
+    <h3 id="account">1-4. 계정 운영 기준</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>항목</th><th>개발의신 기준</th></tr></thead>
+        <tbody>
+          <tr><td>계정 교체 판단</td><td>조회수 1~2자리만 계속 나오면 <strong>일주일</strong> 올려보고 판단. 3자리가 한 번 튀면 유지</td></tr>
+          <tr><td>죽은 계정</td><td>바로 버리지 말 것. "계정 귀합니다". <strong>2달 후 다시 쓰면 올라가는 계정도 있음</strong></td></tr>
+          <tr><td>글 처리</td><td>삭제보다 <strong>보관</strong></td></tr>
+          <tr><td>좋아요·댓글·리포·팔로우</td><td><strong>안 해도 됨.</strong> 하려면 들어가서 보이는 3~5개 정도. "핵심은 글을 올리는 부분"</td></tr>
+          <tr><td>왜 하냐</td><td>아직 품앗이 하는 사람이 많아서, 좋아요 눌러주면 내 게시물 보러 온다</td></tr>
+          <tr><td>속도</td><td>"우리가 하는 좋아요·리포·댓글·팔로우가 잘못된 게 아닌데, <strong>너무 빨리 많이 하면</strong> 문제죠"</td></tr>
+          <tr><td>댓글 답글</td><td>내 글에 댓글 달렸다고 신나서 바로 답글 달지 말 것. 나중에</td></tr>
+          <tr><td>로그인</td><td><strong>로그아웃/로그인 반복은 안 좋음.</strong> 크롬 프로필(메일)을 나눠 각 창에 계정 유지</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ---- -->
+    <h3 id="ban">1-5. 정지 / 계정 상태</h3>
+    <blockquote>
+      <span class="who">개발의신 · 9/2</span>
+      <p>드레쓰로 올렸는데 정지 먹었다가 아니라,
+        <strong>스레드 자체가 정지가 잦아요. 불안정한 채널이라는 걸 계속 이야기드렸던 게 이 부분입니다.</strong></p>
+    </blockquote>
+
+    <div class="note">
+      <div class="t">정지 신호 2가지 — 9/4</div>
+      <ol class="body">
+        <li>비활성화 영구정지</li>
+        <li>프로필에 안 들어가지는 현상 → <strong>다른 아이디로 검색해서 안 나오면 비활성화</strong></li>
+      </ol>
+    </div>
+
+    <ul>
+      <li>"사람이냐" 셀카·번호 인증은 절차상 자주 나옴. 해도 되고,
+        번호 중복이 우려되면 바로 다른 계정으로 넘어가도 된다.</li>
+      <li><strong>메타 앱을 쓸 거면 왓츠앱은 필수로 설치</strong>해둘 것. (인증 대체 수단)</li>
+      <li>드레쓰는 <strong>메타 승인 심사를 받고 만든 툴</strong>이라 다른 카톡방 툴과 다르다는 게 본인 주장.</li>
+    </ul>
+
+    <!-- ---- -->
+    <h3 id="views">1-6. 조회수 해석 — 방에서 가장 많이 나온 질문</h3>
+
+    <div class="note key">
+      <div class="t">핵심</div>
+      <p><strong>"조회수 0이라는 건 없어요."</strong> 스레드 조회수는 오류가 잦아 안 보일 때가 많다.<br>
+      안 보일 때 추정법 → <em>타래 조회수 × 2~4배 = 본문 게시물 조회수</em></p>
+    </div>
+
+    <ul>
+      <li>내 화면엔 안 보이는데 남에겐 보이는 오류도 있다.</li>
+      <li><strong>3자리도 전환은 된다.</strong> 4자리 나오면 "음 나오네" 정도.</li>
+      <li>레퍼런스로 가져올 기준: <strong>좋아요 200개 정도 보이면 가져간다.</strong></li>
+      <li>"글 올리고 조회수 올라라올라라 하고 바라보고 있진 마세요."</li>
+      <li>계정이 많아지면 매번 조회수 확인 안 한다. 계정이 몇 개 안 되니까 자꾸 보는 것.</li>
+    </ul>
+
+    <!-- ---- -->
+    <h3 id="money">1-7. 수익화 · 제휴 (쿠파스 · 토스)</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>항목</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td>쿠파스 API 발급</td><td>총 판매금액 <strong>15만원</strong> 초과해야 발급. 달성 시 <strong>익일 승인</strong></td></tr>
+          <tr><td>쿠파스 정산 반영</td><td>당일 결제분 → <strong>익일 오전 11시 ~ 오후 4시</strong> 사이 업데이트</td></tr>
+          <tr><td>토스 정산 반영</td><td><strong>30분 단위 실시간</strong> 업데이트</td></tr>
+          <tr><td>토스 승인</td><td>거의 익일 승인 <span class="src">(참가자 중엔 20분 만에 승인 사례도)</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>토스 신청 절차</h4>
+    <ol class="steps">
+      <li>웹사이트 클릭</li>
+      <li>스레드 URL 입력</li>
+      <li>스레드 화면 캡처 이미지 첨부</li>
+      <li>신청하기. 끝.</li>
+    </ol>
+    <ul>
+      <li>사업자 없으면 <strong>개인으로 신청</strong>. 나중에 사업자 생기면 전환 요청 가능.</li>
+      <li>공정위 문구 없어도 통과되긴 하지만,
+        <strong>FM은 공정위 문구가 나온 구조의 캡처본 제출</strong>이라고 쓰여 있다.</li>
+    </ul>
+
+    <h4>쿠파스 등록</h4>
+    <ul>
+      <li><strong>쿠파스 아이디는 1개.</strong> 대신 쿠팡을 활용하는 SNS 채널
+        (스레드 A·B·C 계정)을 <strong>웹사이트 목록에 전부 등록</strong>해야 한다. 이미지도 첨부.</li>
+      <li>클릭이 아예 안 잡히면 링크 상태 문제일 수 있으니 쿠팡에 문의.</li>
+      <li>API가 아직 없으면 <strong>원고작성 &gt; 직접작성</strong>으로 URL을 직접 복붙하고 타래 추가로 수동 진행 가능.</li>
+    </ul>
+
+    <blockquote>
+      <span class="who">개발의신 · 9/3</span>
+      <p>일상글이든 광고글이든, 스레드가 일기가 아닌 이상 수익화 목적이면 터지는 구조로 가야죠.
+        <strong>일상글 터졌네 → 바로 링크 붙이기.</strong></p>
+    </blockquote>
+
+    <!-- ---- -->
+    <h3 id="tool">1-8. 드레쓰(툴) 세팅 — 개발의신 + CS 공식 답변</h3>
+
+    <div class="note warn">
+      <div class="t">가장 많이 막힌 지점</div>
+      <p><strong>GPT · 제미나이 "구독"과 "API"는 완전히 별개다.</strong>
+        API는 사용량 과금(주로 선불 충전)이라 충전 잔액이 없으면 기능하지 않는다.
+        이걸 헷갈린 참가자가 압도적으로 많았다.</p>
+    </div>
+
+    <ul>
+      <li>챌린지 신청 시 쓴 <strong>아이디/비번 그대로 로그인</strong>하면 자동 연동. 드레쓰 별도 가입 불필요.</li>
+      <li>드레쓰 로그인 = <strong>툴 로그인일 뿐.</strong> 여기에 <strong>스레드 계정을 따로 연동</strong>해야 글이 올라간다.</li>
+      <li><strong>크롬 확장 연동:</strong> 드레쓰 → 벤치마킹 보관함 → <strong>키 발급하기(JWT)</strong> →
+        크롬 확장 <code>DReaThs Scraper</code>에 붙여넣기. 확장은 <strong>크롬 프로필별로 각각 설치 가능.</strong></li>
+      <li><strong>실시간 구글검색 활용은 off가 정상.</strong>
+        <br><span class="src">"왜냐? 유료 API만 되거든!!!! 무료면 안 된다는 오류 알림이 나옵니다."</span></li>
+      <li><strong>AI API:</strong> 제미나이 무료 API가 편하다. 단 "무료는 오류가 생각보다 많아요."</li>
+      <li><strong>"네트워크 오류" 대표 원인</strong> <span class="src">(CS 개발팀 확인)</span> —
+        GPT 이미지 분석 실패 → 제미나이로 재시도 → 제미나이 API 키 없음 → 팝업.
+        <strong>이미지 분석 토글을 끄면 해결.</strong></li>
+      <li>마이페이지에서: 글양식 설정 / 토스 이미지 on-off / 대표 아이디 설정 / 활동채널 추가.</li>
+      <li>홈페이지 <code>502</code>는 업데이트 중이라는 뜻 → 새로고침.
+        확장은 업데이트마다 껐다 켜야 함(하루 5회 이상 업데이트).</li>
+      <li>링크 미리보기 축은 드레쓰에서 <strong>랜덤</strong>. 없앨 수 없고, <strong>있는 게 좋다</strong>는 게 공식 답변.</li>
+      <li>채널별 페르소나 지정은 미구현(2026-09-02 기준). 멀티 작성 시 메인 계정으로만 잡힘.</li>
+    </ul>
+
+    <div class="note warn">
+      <div class="t">🚨 긴급공지 — 마감 있음</div>
+      <p><strong>토스 API 출발지 IP</strong>에 <code>52.79.119.154</code>를 <strong>9월 18일까지</strong> 추가할 것.
+        기존 <code>49.236.90.137</code>은 사용 중단 예정.</p>
+    </div>
+
+    <!-- ---- -->
+    <h3 id="program">1-9. 챌린지 진행 구조</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>주차</th><th>미션</th></tr></thead>
+        <tbody>
+          <tr><td>1주차 (9/1~)</td><td><strong>계정 다지기.</strong> 일상글·밑밥글 최소 2개. 계정 1개로만. 인증은 카페에</td></tr>
+          <tr><td>2주차 (9/7~)</td><td><strong>계정당 7개 발행</strong> <span class="src">(안내문 기준 5개: 광고글 3 + 일반글 2)</span>. 인증은 그중 1개만</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li>라이브는 <strong>공식 2회</strong>. 1차 8/31 오프닝, 2차 9/10(수) 예정 — 질문자 마이크 오픈 예고.</li>
+      <li>자료 위치: 공지사항 상단 구글 드라이브(라이브 녹화본 + 레퍼런스 계정 + 쿠파스 가이드),
+        노션 사용방법 / 자주묻는질문, 채널톡 1:1 문의.</li>
+      <li>후킹 파일은 "담주에 다시" 배포 예정이라고 언급(9/4).</li>
+      <li>참고: 라이브와 유튜브 목소리는 <strong>본인 목소리가 아니라 AI</strong>라고 직접 밝힘(9/2).</li>
+    </ul>
+  </section>
+
+  <!-- ============ 2 ============ -->
+  <section id="s2">
+    <h2>Section 2</h2>
+    <p class="h2sub">참가자들이 실제로 검증한 팁</p>
+    <hr class="rule">
+
+    <div class="note warn">
+      <div class="t">신뢰도</div>
+      <p>이 절은 주인장 발언이 아니라 <strong>참가자 경험담</strong>이다. 그만큼 낮게 잡고 봐야 한다.</p>
+    </div>
+
+    <h3>다계정 세팅</h3>
+    <ul>
+      <li><strong>크롬 프로필 분리</strong>가 사실상 표준 방법.
+        크롬 우상단 프로필 → <code>Chrome 프로필 추가</code> → 프로필마다 다른 구글 계정 →
+        각 프로필에 스레드 계정 로그인 유지.</li>
+      <li>구글 계정은 <strong>전화번호 없이</strong> 생성. 단
+        <strong>며칠 안에 여러 개를 몰아서 만들면 스팸으로 감지</strong>돼 막힌다.</li>
+      <li>인스타 1개 : 스레드 1개. 인스타를 새로 만들었으면
+        <strong>인스타에 들어가서 스레드를 생성</strong>해줘야 한다.</li>
+      <li>스레드 계정 추가 등록은 <strong>한 번에 여러 개 말고 시간을 두고</strong>. <span class="src">(CS 공식)</span></li>
+      <li>인증 문자가 안 오면 <strong>왓츠앱으로 인증</strong>. <span class="src">(CS 공식)</span></li>
+      <li>공기계는 불필요하다는 게 다수 의견.</li>
+    </ul>
+
+    <h3>스레드 플랫폼 제약</h3>
+    <ul>
+      <li>스레드 <strong>수정은 15분 이내</strong>만 가능. <strong>이미지·영상은 수정 불가.</strong>
+        <span class="src">(개발의신)</span></li>
+      <li>스레드 <strong>예약은 25개 내외</strong>가 한도. <span class="src">(실측)</span></li>
+      <li>링크 미리보기 이미지는 스레드 앱/웹에서 <strong>X버튼으로 제거 가능.</strong>
+        단 <strong>게시 전에만.</strong> 드레쓰가 아니라 스레드 자체 기능.</li>
+    </ul>
+
+    <h3>글쓰기 — 방에서 반응이 가장 좋았던 조언</h3>
+    <div class="note key">
+      <div class="t">핵심 4가지</div>
+      <ul>
+        <li><strong>내가 팔고 싶은 상품을 팔지 말고, 터진 글을 먼저 찾아 재가공</strong>하고 타래에 관련 상품 링크를 넣어라.</li>
+        <li><strong>후킹은 3~4줄 안에 끝내고, 첫 줄에 다 때려넣어라.</strong> 구구절절하면 안 된다.</li>
+        <li>후킹 세기가 부족한 경우가 대부분. <strong>"더 세게, 더 짧게."</strong></li>
+        <li><strong>일상글은 댓글 유도형으로.</strong> "나 2년째 고민 중인데 이거 어때?" → 댓글이 붙는다.</li>
+      </ul>
+    </div>
+    <ul>
+      <li><strong>이슈글 재가공</strong>이 잘 터진다.</li>
+      <li>타래 공정위 문구 아래 한 줄이면 어떤 상품이든 연관시킬 수 있다.</li>
+      <li>조회수 기준(개인 기준): <strong>1만회 = 터진 것 / 1천 = 무난.</strong> 1만은 넘어야 1만원이라도 나온다.</li>
+      <li><strong>마지막에 클릭한 링크의 쿠키가 잡힌다</strong> →
+        내 계정·내 글을 여기저기 많이 걸쳐놓는 게 유리. "낚싯대를 마구마구".</li>
+    </ul>
+
+    <h3>성과 후기</h3>
+    <div class="note warn">
+      <div class="t">전부 개인 주장 · 미확인</div>
+      <ul>
+        <li>AI 영상 게시물 조회수 11만 / 20만 — 댓글은 "AI다"라며 부정적이지만 조회수는 나옴.</li>
+        <li>일상글 소재로 <strong>빌런 이야기 · 시댁 이야기</strong>가 조회수·답글 폭발.</li>
+        <li>첫 글 조회수 7천 / 자고 일어나니 5천·좋아요 200·댓글 13 사례.</li>
+        <li>예약만 걸고 신경 안 쓰니 수익 발생. <strong>팔로워 늘린다고 돌아다니면 정지</strong>당한다는 후기.</li>
+        <li><strong>조회수 ≠ 전환.</strong> 몇만 조회에 다음날 클릭 1건인 사례도 있었다.</li>
+        <li>토스가 조회수 대비 전환율이 좋다는 지인 전언.</li>
+        <li>다수 참가자가 1주차에 계정 비활성화·영구정지를 겪음. 재생성해서 재시작이 일반적 대응.</li>
+        <li>매출 실적·그래프를 블로그 등에 자랑하면 경고·정지 위험.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 3 ============ -->
+  <section id="s3">
+    <h2>Section 3</h2>
+    <p class="h2sub">내가 스레드 운영에 적용한다면</p>
+    <hr class="rule">
+    <p class="src">주인장 발언 중 바로 실행 가능한 것만 추린 순서다. (정리자 판단)</p>
+
+    <ol class="steps">
+      <li><strong>벤치마킹 전용 계정 1개를 먼저 만든다.</strong> 여기서만 스크랩하고, 발행은 다른 계정에서 한다.</li>
+      <li><strong>레퍼런스 계정 링크를 몇 개 클릭해 추천 피드를 오염시킨다.</strong> 콘텐츠 소싱 시간이 여기서 줄어든다.</li>
+      <li><strong>영상 → 상품</strong> 순서를 지킨다. 상품에서 출발하면 느리다.</li>
+      <li><strong>후킹 문장 구조를 페르소나로 고정한다.</strong> 매번 손으로 쓰면 지속이 안 된다.
+        페르소나를 여러 개 만들어 A/B로 돌린다.</li>
+      <li><strong>1주일은 조회수를 판단 근거로 쓰지 않는다.</strong> 1~2자리가 일주일 지속될 때만 계정을 바꾼다.</li>
+      <li><strong>터지면 바로 링크를 붙인다.</strong> 그 타이밍을 놓치지 않는 게 수익화의 전부다.</li>
+      <li><strong>계정은 죽어도 버리지 않고 보관한다.</strong> 2달 뒤 재시도 여지가 있다.</li>
+    </ol>
+  </section>
+
+  <!-- ============ 4 ============ -->
+  <section id="s4">
+    <h2>Section 4</h2>
+    <p class="h2sub">주의해야 할 부분</p>
+    <hr class="rule">
+
+    <div class="note warn">
+      <div class="t">쿠파스 15만원 실적 만들기</div>
+      <p>지인·가족 명의로 실적을 만드는 방법이 단톡방에서 활발히 공유됐다(배우자 계정 가입, 지인 결제 등).
+        <strong>쿠팡 파트너스 약관상 본인·특수관계인 구매는 부정 실적으로 취급될 소지</strong>가 있다.
+        챌린지에서 권장돼도 리스크는 개인이 진다.</p>
+    </div>
+
+    <div class="note warn">
+      <div class="t">콘텐츠 재가공</div>
+      <p>남의 게시물·영상을 스크랩해 재가공하는 방식이 기본 워크플로우다.
+        주인장도 <strong>"이미 남의 것을 가져가는 게 위반"</strong>이라고 언급했다.
+        저작권·플랫폼 정책 리스크가 있다.</p>
+    </div>
+
+    <div class="note warn">
+      <div class="t">수치의 신뢰도</div>
+      <p>이 문서의 수익·조회수 수치는 <strong>전부 참가자 자기보고</strong>다. 광고 성과 자료로 인용하면 안 된다.<br>
+        드레쓰가 "메타 승인을 받았다"는 것도 <strong>주인장 주장</strong>이며 별도로 확인된 바 없다.</p>
+    </div>
+  </section>
+
+  </main>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>출처: <code>드레스단톡방_20260908_1422_39_364_group.txt</code> (카카오톡 대화 내보내기)</span>
+    <span>정리 2026-09-08 · 내부 참고용</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('#toclist a'));
+  var targets = links.map(function(a){ return document.getElementById(a.getAttribute('href').slice(1)); });
+  function sync(){
+    var y = window.scrollY + 90, idx = 0;
+    for (var i=0;i<targets.length;i++){ if (targets[i] && targets[i].offsetTop <= y) idx = i; }
+    links.forEach(function(a,i){ a.classList.toggle('active', i===idx); });
+  }
+  var t=null;
+  window.addEventListener('scroll', function(){ if(t) return; t=setTimeout(function(){t=null;sync();},80);}, {passive:true});
+  sync();
+})();
+</script>
+</body>
+</html>
